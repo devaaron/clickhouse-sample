@@ -1,0 +1,22 @@
+docker create <imageID> -p 8123:8123
+
+CREATE DATABASE test  COMMENT 'test database';
+
+CREATE TABLE tutorial.visits_v1
+(
+    `CounterID` UInt32,
+    `StartDate` Date,
+    `Sign` Int8,
+    `IsNew` UInt8,
+    `VisitID` UInt64,
+    `UserID` UInt64,
+    `StartTime` DateTime,
+    `Duration` UInt32,)
+ENGINE = CollapsingMergeTree(Sign)
+PARTITION BY toYYYYMM(StartDate)
+ORDER BY (CounterID, StartDate, intHash32(UserID), VisitID)
+SAMPLE BY intHash32(UserID);
+
+clickhouse-client --query "INSERT INTO test.visits_v1 FORMAT CSV" --max_insert_block_size=10000 < sample.csv
+
+docker cp sample.csv <containerID>:sample.csv
